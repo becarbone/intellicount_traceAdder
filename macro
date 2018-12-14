@@ -1,0 +1,52 @@
+setForegroundColor(255, 0, 0);
+waitForUser("Please select the folder of images");
+sourcedir = getDirectory("Folder of source images");
+resultdir = getDirectory("Folder of result images");
+roiManager("Show All without labels");
+setTool("polygon");
+run("Set Measurements...", "area mean area_fraction limit redirect=None decimal=5");
+
+sourceList = getFileList(sourcedir);
+resultstring = "image	#puncta	avgInt(/pix)	avgArea(um^2)\n";
+print(sourcedir);
+print(resultstring);
+run("ROI Manager...");
+
+for(p=0;p<sourceList.length;p++){
+	resultstring = resultstring+sourceList[p]+"\n";
+	open(sourcedir+sourceList[p]);
+	title = getTitle();
+	temp = substring(title, 0, indexOf(title, ".tif"));
+	run("In [+]");
+	run("In [+]");
+	run("In [+]");
+	roiManager("Show All without labels");
+	roiManager("reset");
+	run("Clear Results");
+	waitForUser("Select all uncounted puncta \nby tracing each outline and hitting 'add'\non the ROI manager");
+	ROI = newArray();
+	for(n=0;n<roiManager("Count");n++){
+		ROI = Array.concat(ROI,n);
+	}
+	roiManager("Select", ROI);
+	roiManager("Measure");
+	puncta = nResults;
+	area = 0;
+	for(n=0;n<nResults;n++){
+		each = getResult("Area",n);
+		area = area + each;
+	}
+	avgArea = area/(nResults);
+	int = 0;
+	for(n=0;n<nResults;n++) {
+		each = getResult("Mean",n);
+		int = int + each;
+	}
+	avgInt = int/(nResults);
+	roiManager("Draw");
+	saveAs("Tiff", resultdir+temp+"_plusPuncta");
+	close();
+	resultstring = resultstring+temp+"	"+puncta+"	"+avgInt+"	"+avgArea+"\n";
+	print(temp+"	"+puncta+"	"+avgInt+"	"+avgArea);
+}
+File.saveString(resultstring,resultdir+"AddedPuncta.xls");
